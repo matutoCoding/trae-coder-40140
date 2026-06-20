@@ -1,0 +1,128 @@
+@use '@/styles/variables.scss' as *;
+
+.card {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-md;
+  transition: all $transition-base;
+
+  &.clickable {
+    &:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.queueNumber {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  border-radius: $radius-md;
+  padding: $spacing-sm $spacing-md;
+}
+
+.numberText {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
+  line-height: 1.2;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.mergedTag {
+  background: rgba(134, 144, 156, 0.15);
+  border-radius: $radius-sm;
+  padding: 6rpx $spacing-sm;
+}
+
+.mergedText {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.patientInfo {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.patientName {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.missedCount {
+  font-size: $font-size-sm;
+  color: $color-warning;
+}
+
+.clinicName {
+  font-size: $font-size-md;
+  color: $color-text-secondary;
+}
+
+.treatment {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  @include text-ellipsis;
+}
+
+.duration {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.actions {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-lg;
+  padding-top: $spacing-lg;
+  border-top: 1rpx solid $color-divider;
+}
+
+.actionBtn {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-md;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  transition: all $transition-fast;
+
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+
+  &.primary {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    color: $color-text-white;
+    border: none;
+  }
+
+  &.warning {
+    background: $color-warning;
+    color: $color-text-white;
+    border: none;
+  }
+}

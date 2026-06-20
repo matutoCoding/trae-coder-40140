@@ -1,0 +1,313 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background: $color-bg-page;
+  padding-bottom: 40rpx;
+}
+
+.header {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  padding: $spacing-lg $page-padding $spacing-xl;
+}
+
+.headerTitle {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
+  margin-bottom: $spacing-xs;
+}
+
+.headerSubtitle {
+  font-size: $font-size-sm;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.dateSelector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: $spacing-lg;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: $radius-md;
+  padding: $spacing-sm $spacing-md;
+}
+
+.dateText {
+  font-size: $font-size-md;
+  color: $color-text-white;
+  font-weight: $font-weight-medium;
+}
+
+.dateNav {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.dateNavBtn {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-round;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: $font-size-md;
+  color: $color-text-white;
+
+  &:active {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+.content {
+  padding: 0 $page-padding;
+  margin-top: -$spacing-lg;
+}
+
+.tabs {
+  display: flex;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-xs;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.tabItem {
+  flex: 1;
+  height: $button-height-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-md;
+  font-size: $font-size-md;
+  color: $color-text-secondary;
+  transition: all $transition-fast;
+
+  &.active {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    color: $color-text-white;
+    font-weight: $font-weight-medium;
+  }
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.clinicList {
+  display: flex;
+  flex-direction: column;
+}
+
+.clinicCard {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+  transition: all $transition-base;
+
+  &:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
+.clinicHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.clinicInfo {
+  flex: 1;
+}
+
+.clinicName {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.clinicType {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.statusBadge {
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+
+  &.open {
+    background: rgba(82, 196, 26, 0.1);
+    color: $color-success;
+  }
+
+  &.closed {
+    background: rgba(255, 77, 79, 0.1);
+    color: $color-error;
+  }
+
+  &.pause {
+    background: rgba(250, 173, 20, 0.1);
+    color: $color-warning;
+  }
+}
+
+.clinicMeta {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-md;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.metaLabel {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  width: 60rpx;
+}
+
+.metaValue {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.timelineSection {
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1rpx solid $color-divider;
+}
+
+.timelineTitle {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  margin-bottom: $spacing-sm;
+}
+
+.timeline {
+  position: relative;
+  height: 60rpx;
+  background: $color-bg-page;
+  border-radius: $radius-sm;
+  overflow: hidden;
+}
+
+.timelineSlot {
+  position: absolute;
+  top: 6rpx;
+  bottom: 6rpx;
+  border-radius: 4rpx;
+
+  &.occupied {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  }
+
+  &.merged {
+    box-shadow: 0 2rpx 6rpx rgba(22, 119, 255, 0.3);
+  }
+}
+
+.slotTooltip {
+  position: absolute;
+  top: -60rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  background: $color-text-primary;
+  color: $color-text-white;
+  font-size: $font-size-xs;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-xs;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity $transition-fast;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.mergeTag {
+  position: absolute;
+  top: 2rpx;
+  right: 4rpx;
+  background: $color-warning;
+  color: $color-text-white;
+  font-size: 16rpx;
+  padding: 0 6rpx;
+  border-radius: 4rpx;
+}
+
+.timeLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: $spacing-xs;
+}
+
+.timeLabel {
+  font-size: 18rpx;
+  color: $color-text-tertiary;
+}
+
+.statsRow {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-md;
+}
+
+.statItem {
+  flex: 1;
+  text-align: center;
+  padding: $spacing-sm;
+  background: $color-bg-page;
+  border-radius: $radius-sm;
+}
+
+.statNumber {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  color: $color-primary;
+}
+
+.statLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: $spacing-xs;
+}
+
+.viewDetailBtn {
+  margin-top: $spacing-md;
+  height: $button-height-md;
+  border-radius: $radius-button;
+  background: $color-bg-page;
+  color: $color-primary;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-fast;
+
+  &:active {
+    background: $color-bg-hover;
+  }
+}
+
+.emptyState {
+  padding: $spacing-xl * 2 0;
+  text-align: center;
+}
+
+.emptyText {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+}

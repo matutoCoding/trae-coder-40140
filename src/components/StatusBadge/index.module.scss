@@ -1,0 +1,89 @@
+@use '@/styles/variables.scss' as *;
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 $spacing-sm;
+  border-radius: $radius-sm;
+  
+  &.sm {
+    height: 36rpx;
+    min-width: 60rpx;
+  }
+  
+  &.md {
+    height: 48rpx;
+    min-width: 80rpx;
+    padding: 0 $spacing-md;
+  }
+}
+
+.text {
+  font-size: $font-size-xs;
+  line-height: 1;
+  font-weight: $font-weight-medium;
+}
+
+.waiting {
+  background-color: rgba(22, 119, 255, 0.1);
+  .text {
+    color: $color-primary;
+  }
+}
+
+.calling {
+  background-color: rgba(82, 196, 26, 0.1);
+  .text {
+    color: $color-success;
+  }
+}
+
+.visiting {
+  background-color: rgba(82, 196, 26, 0.15);
+  .text {
+    color: $color-success;
+  }
+}
+
+.missed {
+  background-color: rgba(250, 173, 20, 0.1);
+  .text {
+    color: $color-warning;
+  }
+}
+
+.cancelled {
+  background-color: rgba(255, 77, 79, 0.1);
+  .text {
+    color: $color-error;
+  }
+}
+
+.completed {
+  background-color: rgba(134, 144, 156, 0.1);
+  .text {
+    color: $color-text-tertiary;
+  }
+}
+
+.crisis {
+  background-color: rgba(255, 77, 79, 0.15);
+  .text {
+    color: $color-error;
+  }
+}
+
+.urgent {
+  background-color: rgba(250, 173, 20, 0.15);
+  .text {
+    color: $color-warning;
+  }
+}
+
+.normal {
+  background-color: rgba(134, 144, 156, 0.1);
+  .text {
+    color: $color-text-tertiary;
+  }
+}
