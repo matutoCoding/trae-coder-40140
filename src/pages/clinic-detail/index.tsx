@@ -4,11 +4,64 @@ import Taro, { useRouter } from '@tarojs/taro';
 import classnames from 'classnames';
 import { useQueueStore } from '@/store/queueStore';
 import { getClinicTypeLabel } from '@/data/mockClinic';
-import { mergeAdjacentSlots, splitMergedSlot } from '@/utils/queue';
-import { TimeSlot } from '@/types';
 import { formatDuration } from '@/utils/time';
 import dayjs from 'dayjs';
 import styles from './index.module.scss';
+
+const MOCK_DATA_BY_CLINIC: Record<string, any[]> = {
+  c001: [
+    { id: 's1', startTime: '08:30', endTime: '09:00', patientName: '张伟', patientId: 'p1', status: 'occupied' as const, treatmentName: '初诊评估', duration: 30 },
+    { id: 's2', startTime: '09:00', endTime: '09:15', patientName: '李娜', patientId: 'p2', status: 'occupied' as const, treatmentName: '复诊问诊', duration: 15 },
+    { id: 's3', startTime: '09:30', endTime: '10:00', patientName: '王强', patientId: 'p3', status: 'occupied' as const, treatmentName: '初诊评估', duration: 30 },
+    { id: 's4', startTime: '10:00', endTime: '10:20', patientName: '王强', patientId: 'p3', status: 'occupied' as const, treatmentName: '药物调整', duration: 20 },
+    { id: 's5', startTime: '10:30', endTime: '11:00', patientName: '刘芳', patientId: 'p4', status: 'occupied' as const, treatmentName: '心理咨询', duration: 30 },
+    { id: 's6', startTime: '14:00', endTime: '14:15', patientName: '陈明', patientId: 'p5', status: 'occupied' as const, treatmentName: '复诊问诊', duration: 15 },
+    { id: 's7', startTime: '14:15', endTime: '14:45', patientName: '陈明', patientId: 'p5', status: 'occupied' as const, treatmentName: '心理咨询', duration: 30 },
+    { id: 's8', startTime: '15:00', endTime: '15:30', patientName: '赵雪', patientId: 'p6', status: 'occupied' as const, treatmentName: '初诊评估', duration: 30 },
+    { id: 's9', startTime: '15:30', endTime: '15:50', patientName: '赵雪', patientId: 'p6', status: 'occupied' as const, treatmentName: '药物调整', duration: 20 },
+    { id: 's10', startTime: '16:00', endTime: '16:30', patientName: '孙磊', patientId: 'p7', status: 'occupied' as const, treatmentName: '复诊问诊', duration: 30 }
+  ],
+  c002: [
+    { id: 's1', startTime: '08:00', endTime: '08:30', patientName: '周杰', patientId: 'p8', status: 'occupied' as const, treatmentName: '专家咨询', duration: 30 },
+    { id: 's2', startTime: '08:30', endTime: '09:15', patientName: '吴敏', patientId: 'p9', status: 'occupied' as const, treatmentName: '深度评估', duration: 45 },
+    { id: 's3', startTime: '09:30', endTime: '10:00', patientName: '郑浩', patientId: 'p10', status: 'occupied' as const, treatmentName: '专家咨询', duration: 30 },
+    { id: 's4', startTime: '10:00', endTime: '10:45', patientName: '郑浩', patientId: 'p10', status: 'occupied' as const, treatmentName: '治疗方案制定', duration: 45 },
+    { id: 's5', startTime: '14:00', endTime: '14:45', patientName: '冯丽', patientId: 'p11', status: 'occupied' as const, treatmentName: '深度评估', duration: 45 },
+    { id: 's6', startTime: '15:00', endTime: '15:30', patientName: '韩涛', patientId: 'p12', status: 'occupied' as const, treatmentName: '专家咨询', duration: 30 },
+    { id: 's7', startTime: '15:30', endTime: '16:15', patientName: '韩涛', patientId: 'p12', status: 'occupied' as const, treatmentName: '治疗方案制定', duration: 45 },
+    { id: 's8', startTime: '16:30', endTime: '17:00', patientName: '董艳', patientId: 'p13', status: 'occupied' as const, treatmentName: '专家咨询', duration: 30 }
+  ],
+  c003: [
+    { id: 's1', startTime: '08:00', endTime: '08:50', patientName: '黄磊', patientId: 'p14', status: 'occupied' as const, treatmentName: '认知行为治疗', duration: 50 },
+    { id: 's2', startTime: '09:00', endTime: '09:50', patientName: '林静', patientId: 'p15', status: 'occupied' as const, treatmentName: '精神分析治疗', duration: 50 },
+    { id: 's3', startTime: '10:00', endTime: '10:50', patientName: '林涛', patientId: 'p16', status: 'occupied' as const, treatmentName: '认知行为治疗', duration: 50 },
+    { id: 's4', startTime: '11:00', endTime: '11:50', patientName: '徐静', patientId: 'p17', status: 'occupied' as const, treatmentName: '家庭治疗', duration: 50 },
+    { id: 's5', startTime: '14:00', endTime: '14:50', patientName: '杨勇', patientId: 'p18', status: 'occupied' as const, treatmentName: '认知行为治疗', duration: 50 },
+    { id: 's6', startTime: '15:00', endTime: '15:50', patientName: '梁颖', patientId: 'p19', status: 'occupied' as const, treatmentName: '精神分析治疗', duration: 50 },
+    { id: 's7', startTime: '16:00', endTime: '16:50', patientName: '宋凯', patientId: 'p20', status: 'occupied' as const, treatmentName: '团体治疗', duration: 50 }
+  ],
+  c004: [
+    { id: 's1', startTime: '08:00', endTime: '08:30', patientName: '马超', patientId: 'p21', status: 'occupied' as const, treatmentName: '急诊评估', duration: 30 },
+    { id: 's2', startTime: '08:30', endTime: '09:00', patientName: '马超', patientId: 'p21', status: 'occupied' as const, treatmentName: '危机干预', duration: 30 },
+    { id: 's3', startTime: '09:15', endTime: '09:45', patientName: '安雯', patientId: 'p22', status: 'occupied' as const, treatmentName: '急诊评估', duration: 30 },
+    { id: 's4', startTime: '10:00', endTime: '10:30', patientName: '常健', patientId: 'p23', status: 'occupied' as const, treatmentName: '药物中毒处理', duration: 30 },
+    { id: 's5', startTime: '10:30', endTime: '11:00', patientName: '常健', patientId: 'p23', status: 'occupied' as const, treatmentName: '留观评估', duration: 30 },
+    { id: 's6', startTime: '14:00', endTime: '14:30', patientName: '崔明', patientId: 'p24', status: 'occupied' as const, treatmentName: '急诊评估', duration: 30 },
+    { id: 's7', startTime: '14:30', endTime: '15:00', patientName: '崔明', patientId: 'p24', status: 'occupied' as const, treatmentName: '快速镇静', duration: 30 },
+    { id: 's8', startTime: '15:15', endTime: '15:45', patientName: '戴莹', patientId: 'p25', status: 'occupied' as const, treatmentName: '自伤处理', duration: 30 },
+    { id: 's9', startTime: '16:00', endTime: '16:30', patientName: '邓辉', patientId: 'p26', status: 'occupied' as const, treatmentName: '急诊评估', duration: 30 }
+  ],
+  c005: [
+    { id: 's1', startTime: '08:00', endTime: '08:30', patientName: '豆豆(6岁)', patientId: 'p27', status: 'occupied' as const, treatmentName: '儿童评估', duration: 30 },
+    { id: 's2', startTime: '08:45', endTime: '09:30', patientName: '豆豆(6岁)', patientId: 'p27', status: 'occupied' as const, treatmentName: '亲子游戏治疗', duration: 45 },
+    { id: 's3', startTime: '09:45', endTime: '10:15', patientName: '乐乐(8岁)', patientId: 'p28', status: 'occupied' as const, treatmentName: '儿童评估', duration: 30 },
+    { id: 's4', startTime: '10:30', endTime: '11:00', patientName: '萌萌(10岁)', patientId: 'p29', status: 'occupied' as const, treatmentName: '儿童评估', duration: 30 },
+    { id: 's5', startTime: '11:00', endTime: '11:45', patientName: '萌萌(10岁)', patientId: 'p29', status: 'occupied' as const, treatmentName: '认知训练', duration: 45 },
+    { id: 's6', startTime: '14:00', endTime: '14:30', patientName: '浩浩(7岁)', patientId: 'p30', status: 'occupied' as const, treatmentName: '儿童评估', duration: 30 },
+    { id: 's7', startTime: '14:45', endTime: '15:30', patientName: '浩浩(7岁)', patientId: 'p30', status: 'occupied' as const, treatmentName: '行为矫正', duration: 45 },
+    { id: 's8', startTime: '15:45', endTime: '16:15', patientName: '欣欣(9岁)', patientId: 'p31', status: 'occupied' as const, treatmentName: '儿童评估', duration: 30 }
+  ]
+};
 
 const ClinicDetailPage: React.FC = () => {
   const router = useRouter();
@@ -20,8 +73,14 @@ const ClinicDetailPage: React.FC = () => {
   const [showMerged, setShowMerged] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'timeline' | 'treatment'>('timeline');
-  
   const [baseSlots, setBaseSlots] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    const mockData = MOCK_DATA_BY_CLINIC[clinicId] || MOCK_DATA_BY_CLINIC['c001'];
+    const dataWithClinicId = mockData.map(s => ({ ...s, clinicId }));
+    setBaseSlots(dataWithClinicId);
+    setSelectedSlot(null);
+  }, [clinicId]);
 
   const clinic = useMemo(() => getClinicById(clinicId), [getClinicById, clinicId]);
 
@@ -35,36 +94,24 @@ const ClinicDetailPage: React.FC = () => {
     [getTimeSlots, clinicId, selectedDate]
   );
 
-  React.useEffect(() => {
-    const mockData = [
-      { id: 's1', startTime: '08:30', endTime: '09:00', patientName: '张伟', patientId: 'p1', status: 'occupied' as const, treatmentName: '初诊评估', duration: 30 },
-      { id: 's2', startTime: '09:00', endTime: '09:15', patientName: '李娜', patientId: 'p2', status: 'occupied' as const, treatmentName: '复诊问诊', duration: 15 },
-      { id: 's3', startTime: '09:30', endTime: '10:00', patientName: '王强', patientId: 'p3', status: 'occupied' as const, treatmentName: '初诊评估', duration: 30 },
-      { id: 's4', startTime: '10:00', endTime: '10:20', patientName: '王强', patientId: 'p3', status: 'occupied' as const, treatmentName: '药物调整', duration: 20 },
-      { id: 's5', startTime: '10:30', endTime: '11:00', patientName: '刘芳', patientId: 'p4', status: 'occupied' as const, treatmentName: '心理咨询', duration: 30 },
-      { id: 's6', startTime: '14:00', endTime: '14:15', patientName: '陈明', patientId: 'p5', status: 'occupied' as const, treatmentName: '复诊问诊', duration: 15 },
-      { id: 's7', startTime: '14:15', endTime: '14:45', patientName: '陈明', patientId: 'p5', status: 'occupied' as const, treatmentName: '心理咨询', duration: 30 },
-      { id: 's8', startTime: '15:00', endTime: '15:30', patientName: '赵雪', patientId: 'p6', status: 'occupied' as const, treatmentName: '初诊评估', duration: 30 },
-      { id: 's9', startTime: '15:30', endTime: '15:50', patientName: '赵雪', patientId: 'p6', status: 'occupied' as const, treatmentName: '药物调整', duration: 20 },
-      { id: 's10', startTime: '16:00', endTime: '16:30', patientName: '孙磊', patientId: 'p7', status: 'occupied' as const, treatmentName: '复诊问诊', duration: 30 }
-    ];
-    setBaseSlots(mockData);
-    setSelectedSlot(null);
-  }, [clinicId]);
+  const occupiedCount = useMemo(() => 
+    baseSlots.filter(s => s.status === 'occupied').length,
+    [baseSlots]
+  );
 
   const mergedSlots = useMemo(() => {
     if (baseSlots.length === 0) return [];
     
-    const sorted = [...baseSlots].sort((a, b) => 
-      dayjs(a.startTime, 'HH:mm').valueOf() - dayjs(b.startTime, 'HH:mm').valueOf()
-    );
+    const sorted = [...baseSlots]
+      .filter(s => s.status === 'occupied')
+      .sort((a, b) => 
+        dayjs(a.startTime, 'HH:mm').valueOf() - dayjs(b.startTime, 'HH:mm').valueOf()
+      );
     
     const result: any[] = [];
     let currentMerge: any = null;
 
     for (const slot of sorted) {
-      if (slot.status !== 'occupied') continue;
-
       if (currentMerge && currentMerge.patientId === slot.patientId) {
         const prevEnd = dayjs(currentMerge.endTime, 'HH:mm');
         const currStart = dayjs(slot.startTime, 'HH:mm');
@@ -109,12 +156,17 @@ const ClinicDetailPage: React.FC = () => {
     if (showMerged) {
       return mergedSlots;
     }
-    return baseSlots.filter(s => s.status === 'occupied').map(s => ({
-      ...s,
-      treatments: [{ id: s.id, name: s.treatmentName, duration: s.duration }],
-      mergedSlotIds: [s.id],
-      isMerged: false
-    }));
+    return baseSlots
+      .filter(s => s.status === 'occupied')
+      .sort((a, b) => 
+        dayjs(a.startTime, 'HH:mm').valueOf() - dayjs(b.startTime, 'HH:mm').valueOf()
+      )
+      .map(s => ({
+        ...s,
+        treatments: [{ id: s.id, name: s.treatmentName, duration: s.duration }],
+        mergedSlotIds: [s.id],
+        isMerged: false
+      }));
   }, [showMerged, mergedSlots, baseSlots]);
 
   const waitingCount = useMemo(() => 
@@ -137,44 +189,107 @@ const ClinicDetailPage: React.FC = () => {
     setShowMerged(!showMerged);
     setSelectedSlot(null);
     Taro.showToast({
-      title: showMerged ? '已拆分时段' : '已合并时段',
+      title: showMerged ? '已切换到拆分视图' : '已切换到合并视图',
       icon: 'none'
     });
   };
 
-  const handleCancelSlot = (slotId?: string) => {
-    const targetId = slotId || selectedSlot?.id;
-    if (!targetId) return;
+  const handleCancelSlot = (treatmentId?: string) => {
+    if (!selectedSlot) return;
 
-    const isMergedSlot = selectedSlot?.isMerged && !slotId;
+    let idsToCancel: string[] = [];
+    
+    if (treatmentId) {
+      idsToCancel = [treatmentId];
+    } else if (selectedSlot.mergedSlotIds) {
+      idsToCancel = selectedSlot.mergedSlotIds;
+    }
+
+    const patientId = selectedSlot.patientId;
+    const isMergedSlot = selectedSlot.isMerged && !treatmentId;
     
     Taro.showModal({
       title: '确认取消',
       content: isMergedSlot 
         ? '确定要取消整个合并时段的所有预约吗？' 
-        : '确定要取消这个预约时段吗？',
+        : treatmentId
+          ? '确定要取消这个诊疗项目吗？'
+          : '确定要取消这个预约时段吗？',
       success: (res) => {
         if (res.confirm) {
-          let idsToCancel: string[] = [];
-          
-          if (isMergedSlot && selectedSlot?.mergedSlotIds) {
-            idsToCancel = selectedSlot.mergedSlotIds;
-          } else if (slotId) {
-            idsToCancel = [slotId];
-          } else if (selectedSlot?.mergedSlotIds) {
-            idsToCancel = selectedSlot.mergedSlotIds;
-          }
-
-          setBaseSlots(prev => 
-            prev.map(s => 
+          setBaseSlots(prev => {
+            const updated = prev.map(s => 
               idsToCancel.includes(s.id) 
                 ? { ...s, status: 'available' as const }
                 : s
-            )
-          );
+            );
+
+            const remaining = updated.filter(
+              s => s.status === 'occupied' 
+                && s.patientId === patientId 
+                && !idsToCancel.includes(s.id)
+            );
+            
+            if (remaining.length >= 2) {
+              const remainingSorted = [...remaining].sort((a, b) => 
+                dayjs(a.startTime, 'HH:mm').valueOf() - dayjs(b.startTime, 'HH:mm').valueOf()
+              );
+              let consecutiveStart = 0;
+              let consecutiveEnd = 0;
+              let maxConsecutive = 1;
+              let currentConsecutive = 1;
+              
+              for (let i = 1; i < remainingSorted.length; i++) {
+                const prevEnd = dayjs(remainingSorted[i - 1].endTime, 'HH:mm');
+                const currStart = dayjs(remainingSorted[i].startTime, 'HH:mm');
+                if (prevEnd.valueOf() === currStart.valueOf()) {
+                  currentConsecutive++;
+                  if (currentConsecutive > maxConsecutive) {
+                    maxConsecutive = currentConsecutive;
+                    consecutiveEnd = i;
+                    consecutiveStart = i - maxConsecutive + 1;
+                  }
+                } else {
+                  currentConsecutive = 1;
+                }
+              }
+              
+              const consecutiveSlots = remainingSorted.slice(consecutiveStart, consecutiveEnd + 1);
+              setSelectedSlot({
+                id: `merge-${consecutiveSlots[0].id}`,
+                startTime: consecutiveSlots[0].startTime,
+                endTime: consecutiveSlots[consecutiveSlots.length - 1].endTime,
+                patientName: consecutiveSlots[0].patientName,
+                patientId: consecutiveSlots[0].patientId,
+                status: 'occupied',
+                duration: consecutiveSlots.reduce((sum, s) => sum + s.duration, 0),
+                isMerged: consecutiveSlots.length > 1,
+                mergedSlotIds: consecutiveSlots.map(s => s.id),
+                treatments: consecutiveSlots.map(s => ({ 
+                  id: s.id, 
+                  name: s.treatmentName, 
+                  duration: s.duration 
+                }))
+              });
+            } else if (remaining.length === 1) {
+              setSelectedSlot({
+                ...remaining[0],
+                treatments: [{ 
+                  id: remaining[0].id, 
+                  name: remaining[0].treatmentName, 
+                  duration: remaining[0].duration 
+                }],
+                mergedSlotIds: [remaining[0].id],
+                isMerged: false
+              });
+            } else {
+              setSelectedSlot(null);
+            }
+
+            return updated;
+          });
 
           Taro.showToast({ title: '已取消预约', icon: 'success' });
-          setSelectedSlot(null);
         }
       }
     });
@@ -294,12 +409,17 @@ const ClinicDetailPage: React.FC = () => {
                     {item.duration}分钟
                   </Text>
                 </View>
-                <Button 
-                  className={classnames(styles.actionBtn, styles.cancelMini)}
-                  onClick={() => handleCancelSlot(item.id)}
-                >
-                  取消
-                </Button>
+                {treatments.length > 1 && (
+                  <Button 
+                    className={classnames(styles.actionBtn, styles.cancelMini)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCancelSlot(item.id);
+                    }}
+                  >
+                    取消
+                  </Button>
+                )}
               </View>
             ))}
           </View>
@@ -326,7 +446,9 @@ const ClinicDetailPage: React.FC = () => {
   if (!clinic) {
     return (
       <View className={styles.page}>
-        <Text>诊室不存在</Text>
+        <View style={{ padding: '100rpx', textAlign: 'center' }}>
+          <Text style={{ fontSize: '32rpx', color: '#999' }}>诊室不存在或已删除</Text>
+        </View>
       </View>
     );
   }
@@ -361,7 +483,7 @@ const ClinicDetailPage: React.FC = () => {
               <Text className={styles.statLabel}>已完成</Text>
             </View>
             <View className={styles.statCard}>
-              <Text className={styles.statNumber}>{mockOccupiedData.length}</Text>
+              <Text className={styles.statNumber}>{displaySlots.length}</Text>
               <Text className={styles.statLabel}>已预约</Text>
             </View>
           </View>
@@ -395,23 +517,37 @@ const ClinicDetailPage: React.FC = () => {
 
           {activeTab === 'timeline' && (
             <>
-              {renderTimeline()}
-              {renderSlotDetail()}
+              {baseSlots.length > 0 ? (
+                <>
+                  {renderTimeline()}
+                  {renderSlotDetail()}
+                </>
+              ) : (
+                <View style={{ padding: '100rpx 0', textAlign: 'center' }}>
+                  <Text style={{ fontSize: '28rpx', color: '#999' }}>暂无排期数据</Text>
+                </View>
+              )}
             </>
           )}
 
           {activeTab === 'treatment' && (
             <View className={styles.treatmentList}>
-              {treatmentItems.map((item: any) => (
-                <View key={item.id} className={styles.treatmentItem} style={{ padding: '24rpx' }}>
-                  <View>
-                    <Text className={styles.treatmentName} style={{ fontSize: '28rpx' }}>{item.name}</Text>
-                    <Text className={styles.treatmentDuration}>
-                      {item.duration}分钟 · ¥{item.price}
-                    </Text>
+              {treatmentItems.length > 0 ? (
+                treatmentItems.map((item: any) => (
+                  <View key={item.id} className={styles.treatmentItem} style={{ padding: '24rpx' }}>
+                    <View>
+                      <Text className={styles.treatmentName} style={{ fontSize: '28rpx' }}>{item.name}</Text>
+                      <Text className={styles.treatmentDuration}>
+                        {item.duration}分钟 · ¥{item.price}
+                      </Text>
+                    </View>
                   </View>
+                ))
+              ) : (
+                <View style={{ padding: '60rpx 0', textAlign: 'center' }}>
+                  <Text style={{ fontSize: '28rpx', color: '#999' }}>暂无诊疗项目</Text>
                 </View>
-              ))}
+              )}
             </View>
           )}
         </View>
