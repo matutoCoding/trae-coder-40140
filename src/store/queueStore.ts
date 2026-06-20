@@ -131,7 +131,7 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     }));
   },
 
-  markMissed: (recordId) => {
+  markMissed: (recordId: string) => {
     console.log('[QueueStore] markMissed', { recordId });
     set((state) => {
       const record = state.queueRecords.find(r => r.id === recordId);
@@ -148,10 +148,11 @@ export const useQueueStore = create<QueueState>((set, get) => ({
         clinicName: record.clinicName,
         missedCount: result.record.missedCount,
         callTime: record.callTime || new Date().toISOString(),
-        status: result.isCancelled ? 'cancelled' : 'pending',
+        status: result.isCancelled ? 'cancelled' : 'requeued',
+        requeueTime: result.isRequeued ? new Date().toISOString() : undefined,
         remark: result.isCancelled 
           ? `连续${result.record.missedCount}次过号，已自动作废` 
-          : `第${result.record.missedCount}次过号，可重新排队`
+          : `第${result.record.missedCount}次过号，已自动重排队尾`
       };
 
       return {

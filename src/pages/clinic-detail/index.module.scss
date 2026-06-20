@@ -269,6 +269,21 @@
   color: $color-text-tertiary;
 }
 
+.cancelMini {
+  @include button-reset;
+  height: 48rpx;
+  padding: 0 $spacing-sm;
+  background: $color-error;
+  color: $color-text-white;
+  border-radius: $radius-sm;
+  font-size: $font-size-xs;
+  border: none;
+  
+  &:active {
+    opacity: 0.8;
+  }
+}
+
 .actionRow {
   display: flex;
   gap: $spacing-md;

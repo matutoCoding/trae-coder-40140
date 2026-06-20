@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, Button } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import classnames from 'classnames';
-import { CrisisQuestion, CrisisLevel } from '@/types';
+import { CrisisQuestion, CrisisLevel, PriorityLevel } from '@/types';
+import { useQueueStore } from '@/store/queueStore';
 import styles from './index.module.scss';
 
 const CRISIS_QUESTIONS: CrisisQuestion[] = [
@@ -75,10 +76,12 @@ const CRISIS_QUESTIONS: CrisisQuestion[] = [
 ];
 
 const CrisisAssessPage: React.FC = () => {
+  const { currentPatient, clinics, getTreatmentItems, addQueueRecord, setSelectedClinicId } = useQueueStore();
+  
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [showResult, setShowResult] = useState(false);
-  const [patientName, setPatientName] = useState('张三');
+  const [selectedClinic, setSelectedClinic] = useState<string>('c001');
 
   const totalQuestions = CRISIS_QUESTIONS.length;
   const answeredCount = Object.keys(answers).length;
@@ -117,6 +120,31 @@ const CrisisAssessPage: React.FC = () => {
       };
     }
   }, [totalScore]);
+
+  const queuePriority = useMemo((): PriorityLevel => {
+    switch (crisisLevel.level) {
+      case 'critical':
+        return 'crisis';
+      case 'high':
+        return 'urgent';
+      default:
+        return 'normal';
+    }
+  }, [crisisLevel]);
+
+  const priorityLabel = useMemo(() => {
+    const labels: Record<PriorityLevel, string> = {
+      crisis: '危急优先',
+      urgent: '加急',
+      normal: '普通'
+    };
+    return labels[queuePriority];
+  }, [queuePriority]);
+
+  const openClinics = useMemo(() => 
+    clinics.filter(c => c.status === 'open'),
+    [clinics]
+  );
 
   const suggestions = useMemo(() => {
     const baseSuggestions = [
@@ -181,18 +209,39 @@ const CrisisAssessPage: React.FC = () => {
   };
 
   const handlePriorityQueue = () => {
+    const clinic = clinics.find(c => c.id === selectedClinic);
+    if (!clinic) return;
+
+    const treatmentItems = getTreatmentItems(selectedClinic);
+    const defaultTreatment = treatmentItems[0];
+    if (!defaultTreatment) return;
+
     Taro.showModal({
-      title: '确认优先排队',
-      content: `根据评估结果，您的危机等级为【${crisisLevel.label}】，系统将为您安排优先就诊。是否确认？`,
+      title: '确认取号',
+      content: `确定前往【${clinic.name}】就诊吗？\n优先级：${priorityLabel}`,
       success: (res) => {
         if (res.confirm) {
-          Taro.showToast({
-            title: '已加入优先队列',
-            icon: 'success',
-            duration: 2000
+          addQueueRecord({
+            patientId: currentPatient.id,
+            patientName: currentPatient.name,
+            clinicId: selectedClinic,
+            clinicName: clinic.name,
+            treatmentItemIds: [defaultTreatment.id],
+            treatmentItemNames: [defaultTreatment.name],
+            totalDuration: defaultTreatment.duration,
+            priority: queuePriority
           });
+
+          setSelectedClinicId(selectedClinic);
+
+          Taro.showToast({
+            title: '取号成功',
+            icon: 'success',
+            duration: 1500
+          });
+
           setTimeout(() => {
-            Taro.navigateBack();
+            Taro.switchTab({ url: '/pages/queue/index' });
           }, 1500);
         }
       }
@@ -248,7 +297,7 @@ const CrisisAssessPage: React.FC = () => {
           <View className={styles.infoCard}>
             <View className={styles.infoRow}>
               <Text className={styles.infoLabel}>就诊人</Text>
-              <Text className={styles.infoValue}>{patientName}</Text>
+              <Text className={styles.infoValue}>{currentPatient.name}</Text>
             </View>
             <View className={styles.infoRow}>
               <Text className={styles.infoLabel}>评估时间</Text>
@@ -257,8 +306,35 @@ const CrisisAssessPage: React.FC = () => {
               </Text>
             </View>
             <View className={styles.infoRow}>
-              <Text className={styles.infoLabel}>题目数量</Text>
-              <Text className={styles.infoValue}>{totalQuestions}题</Text>
+              <Text className={styles.infoLabel}>推荐优先级</Text>
+              <Text className={styles.infoValue} style={{ color: queuePriority === 'crisis' ? '#ff4d4f' : queuePriority === 'urgent' ? '#fa8c16' : '#1677ff' }}>
+                {priorityLabel}
+              </Text>
+            </View>
+          </View>
+
+          <View className={styles.section} style={{ marginTop: '24rpx' }}>
+            <Text className={styles.sectionTitle}>选择就诊诊室</Text>
+            <View className={styles.clinicList}>
+              {openClinics.map(clinic => (
+                <View
+                  key={clinic.id}
+                  className={classnames(styles.clinicOption, {
+                    [styles.selected]: selectedClinic === clinic.id
+                  })}
+                  onClick={() => setSelectedClinic(clinic.id)}
+                >
+                  <View className={styles.clinicOptionInfo}>
+                    <Text className={styles.clinicOptionName}>{clinic.name}</Text>
+                    <Text className={styles.clinicOptionDesc}>
+                      {clinic.doctorName} · {clinic.location}
+                    </Text>
+                  </View>
+                  {selectedClinic === clinic.id && (
+                    <View className={styles.checkIcon}>✓</View>
+                  )}
+                </View>
+              ))}
             </View>
           </View>
         </View>

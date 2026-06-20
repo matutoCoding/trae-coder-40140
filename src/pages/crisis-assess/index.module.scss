@@ -338,3 +338,73 @@
   color: $color-text-primary;
   font-weight: $font-weight-medium;
 }
+
+.section {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-md;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.clinicList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.clinicOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-md;
+  border: 2rpx solid $color-border;
+  border-radius: $radius-md;
+  background: $color-bg-card;
+  transition: all $transition-fast;
+
+  &.selected {
+    border-color: $color-primary;
+    background: $color-primary-bg;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.clinicOptionInfo {
+  flex: 1;
+}
+
+.clinicOptionName {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+  margin-bottom: $spacing-xs;
+}
+
+.clinicOptionDesc {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.checkIcon {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: $color-primary;
+  color: $color-text-white;
+  font-size: $font-size-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: $font-weight-bold;
+}

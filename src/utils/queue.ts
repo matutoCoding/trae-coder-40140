@@ -46,7 +46,6 @@ export const requeueToEnd = (
   const updatedRecord: QueueRecord = {
     ...record,
     status: 'waiting',
-    missedCount: record.missedCount + 1,
     createTime: new Date().toISOString()
   };
 
@@ -63,25 +62,43 @@ export const requeueToEnd = (
 export const markAsMissed = (
   record: QueueRecord,
   allRecords: QueueRecord[]
-): { record: QueueRecord; allRecords: QueueRecord[]; isCancelled: boolean } => {
+): { record: QueueRecord; allRecords: QueueRecord[]; isCancelled: boolean; isRequeued: boolean } => {
   const newMissedCount = record.missedCount + 1;
   const isCancelled = newMissedCount >= MAX_MISSED_COUNT;
+  const isRequeued = !isCancelled;
 
-  const updatedRecord: QueueRecord = {
-    ...record,
-    status: isCancelled ? 'cancelled' : 'missed',
-    missedCount: newMissedCount,
-    callTime: new Date().toISOString()
-  };
+  let updatedRecord: QueueRecord;
+  let newRecords: QueueRecord[];
 
-  const newRecords = allRecords.map(r =>
-    r.id === record.id ? updatedRecord : r
-  );
+  if (isCancelled) {
+    updatedRecord = {
+      ...record,
+      status: 'cancelled',
+      missedCount: newMissedCount,
+      callTime: new Date().toISOString()
+    };
+    newRecords = allRecords.map(r =>
+      r.id === record.id ? updatedRecord : r
+    );
+  } else {
+    updatedRecord = {
+      ...record,
+      status: 'waiting',
+      missedCount: newMissedCount,
+      callTime: new Date().toISOString(),
+      createTime: new Date().toISOString()
+    };
+    newRecords = allRecords
+      .filter(r => r.id !== record.id)
+      .concat(updatedRecord);
+    newRecords = sortQueue(newRecords);
+  }
 
   return {
     record: updatedRecord,
     allRecords: newRecords,
-    isCancelled
+    isCancelled,
+    isRequeued
   };
 };
 

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, Button, ScrollView } from '@tarojs/components';
-import Taro from '@tarojs/taro';
+import Taro, { useRouter } from '@tarojs/taro';
 import classnames from 'classnames';
 import { useQueueStore } from '@/store/queueStore';
 import { getClinicTypeLabel } from '@/data/mockClinic';
@@ -11,45 +11,111 @@ import dayjs from 'dayjs';
 import styles from './index.module.scss';
 
 const ClinicDetailPage: React.FC = () => {
-  const { getClinicById, getTimeSlots, getWaitingList, queueRecords } = useQueueStore();
+  const router = useRouter();
+  const { getClinicById, getTimeSlots, getWaitingList, queueRecords, getTreatmentItems } = useQueueStore();
   
-  const [clinicId, setClinicId] = useState<string>('c001');
+  const routeClinicId = router.params.id || 'c001';
+  const [clinicId] = useState<string>(routeClinicId);
   const [selectedDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [showMerged, setShowMerged] = useState(true);
-  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'timeline' | 'treatment'>('timeline');
+  
+  const [baseSlots, setBaseSlots] = useState<any[]>([]);
 
   const clinic = useMemo(() => getClinicById(clinicId), [getClinicById, clinicId]);
+
+  const treatmentItems = useMemo(() => 
+    getTreatmentItems(clinicId), 
+    [getTreatmentItems, clinicId]
+  );
 
   const allSlots = useMemo(() => 
     getTimeSlots(clinicId, selectedDate),
     [getTimeSlots, clinicId, selectedDate]
   );
 
-  const displaySlots = useMemo(() => {
-    const occupiedSlots = allSlots.filter(s => s.status === 'occupied');
-    if (showMerged) {
-      return mergeAdjacentSlots(occupiedSlots);
-    }
-    return occupiedSlots;
-  }, [allSlots, showMerged]);
-
-  const mockOccupiedData = useMemo(() => {
+  React.useEffect(() => {
     const mockData = [
-      { id: '1', startTime: '08:30', endTime: '09:00', patientName: '张伟', status: 'occupied' as const, isMerged: false, clinicId },
-      { id: '2', startTime: '09:00', endTime: '09:15', patientName: '李娜', status: 'occupied' as const, isMerged: false, clinicId },
-      { id: '3', startTime: '09:30', endTime: '10:20', patientName: '王强', status: 'occupied' as const, isMerged: true, clinicId, mergedSlotIds: ['3a', '3b'] },
-      { id: '4', startTime: '10:30', endTime: '11:00', patientName: '刘芳', status: 'occupied' as const, isMerged: false, clinicId },
-      { id: '5', startTime: '14:00', endTime: '14:45', patientName: '陈明', status: 'occupied' as const, isMerged: false, clinicId },
-      { id: '6', startTime: '15:00', endTime: '15:50', patientName: '赵雪', status: 'occupied' as const, isMerged: true, clinicId, mergedSlotIds: ['6a', '6b'] },
-      { id: '7', startTime: '16:00', endTime: '16:30', patientName: '孙磊', status: 'occupied' as const, isMerged: false, clinicId }
+      { id: 's1', startTime: '08:30', endTime: '09:00', patientName: '张伟', patientId: 'p1', status: 'occupied' as const, treatmentName: '初诊评估', duration: 30 },
+      { id: 's2', startTime: '09:00', endTime: '09:15', patientName: '李娜', patientId: 'p2', status: 'occupied' as const, treatmentName: '复诊问诊', duration: 15 },
+      { id: 's3', startTime: '09:30', endTime: '10:00', patientName: '王强', patientId: 'p3', status: 'occupied' as const, treatmentName: '初诊评估', duration: 30 },
+      { id: 's4', startTime: '10:00', endTime: '10:20', patientName: '王强', patientId: 'p3', status: 'occupied' as const, treatmentName: '药物调整', duration: 20 },
+      { id: 's5', startTime: '10:30', endTime: '11:00', patientName: '刘芳', patientId: 'p4', status: 'occupied' as const, treatmentName: '心理咨询', duration: 30 },
+      { id: 's6', startTime: '14:00', endTime: '14:15', patientName: '陈明', patientId: 'p5', status: 'occupied' as const, treatmentName: '复诊问诊', duration: 15 },
+      { id: 's7', startTime: '14:15', endTime: '14:45', patientName: '陈明', patientId: 'p5', status: 'occupied' as const, treatmentName: '心理咨询', duration: 30 },
+      { id: 's8', startTime: '15:00', endTime: '15:30', patientName: '赵雪', patientId: 'p6', status: 'occupied' as const, treatmentName: '初诊评估', duration: 30 },
+      { id: 's9', startTime: '15:30', endTime: '15:50', patientName: '赵雪', patientId: 'p6', status: 'occupied' as const, treatmentName: '药物调整', duration: 20 },
+      { id: 's10', startTime: '16:00', endTime: '16:30', patientName: '孙磊', patientId: 'p7', status: 'occupied' as const, treatmentName: '复诊问诊', duration: 30 }
     ];
+    setBaseSlots(mockData);
+    setSelectedSlot(null);
+  }, [clinicId]);
+
+  const mergedSlots = useMemo(() => {
+    if (baseSlots.length === 0) return [];
     
-    if (showMerged) {
-      return mockData.filter(s => s.isMerged || !mockData.some(d => d.mergedSlotIds?.includes(s.id)));
+    const sorted = [...baseSlots].sort((a, b) => 
+      dayjs(a.startTime, 'HH:mm').valueOf() - dayjs(b.startTime, 'HH:mm').valueOf()
+    );
+    
+    const result: any[] = [];
+    let currentMerge: any = null;
+
+    for (const slot of sorted) {
+      if (slot.status !== 'occupied') continue;
+
+      if (currentMerge && currentMerge.patientId === slot.patientId) {
+        const prevEnd = dayjs(currentMerge.endTime, 'HH:mm');
+        const currStart = dayjs(slot.startTime, 'HH:mm');
+        if (prevEnd.valueOf() === currStart.valueOf()) {
+          currentMerge.endTime = slot.endTime;
+          currentMerge.duration += slot.duration;
+          currentMerge.mergedSlotIds.push(slot.id);
+          currentMerge.treatments.push({ id: slot.id, name: slot.treatmentName, duration: slot.duration });
+          continue;
+        }
+      }
+
+      if (currentMerge) {
+        result.push(currentMerge);
+      }
+
+      currentMerge = {
+        id: `merge-${slot.id}`,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        patientName: slot.patientName,
+        patientId: slot.patientId,
+        status: 'occupied',
+        duration: slot.duration,
+        isMerged: false,
+        mergedSlotIds: [slot.id],
+        treatments: [{ id: slot.id, name: slot.treatmentName, duration: slot.duration }]
+      };
     }
-    return mockData;
-  }, [showMerged, clinicId]);
+
+    if (currentMerge) {
+      result.push(currentMerge);
+    }
+
+    return result.map(s => ({
+      ...s,
+      isMerged: s.mergedSlotIds.length > 1
+    }));
+  }, [baseSlots]);
+
+  const displaySlots = useMemo(() => {
+    if (showMerged) {
+      return mergedSlots;
+    }
+    return baseSlots.filter(s => s.status === 'occupied').map(s => ({
+      ...s,
+      treatments: [{ id: s.id, name: s.treatmentName, duration: s.duration }],
+      mergedSlotIds: [s.id],
+      isMerged: false
+    }));
+  }, [showMerged, mergedSlots, baseSlots]);
 
   const waitingCount = useMemo(() => 
     getWaitingList(clinicId).length,
@@ -76,14 +142,37 @@ const ClinicDetailPage: React.FC = () => {
     });
   };
 
-  const handleCancelSlot = () => {
-    if (!selectedSlot) return;
+  const handleCancelSlot = (slotId?: string) => {
+    const targetId = slotId || selectedSlot?.id;
+    if (!targetId) return;
+
+    const isMergedSlot = selectedSlot?.isMerged && !slotId;
     
     Taro.showModal({
       title: '确认取消',
-      content: '确定要取消这个预约时段吗？取消后时段将拆分为独立时段。',
+      content: isMergedSlot 
+        ? '确定要取消整个合并时段的所有预约吗？' 
+        : '确定要取消这个预约时段吗？',
       success: (res) => {
         if (res.confirm) {
+          let idsToCancel: string[] = [];
+          
+          if (isMergedSlot && selectedSlot?.mergedSlotIds) {
+            idsToCancel = selectedSlot.mergedSlotIds;
+          } else if (slotId) {
+            idsToCancel = [slotId];
+          } else if (selectedSlot?.mergedSlotIds) {
+            idsToCancel = selectedSlot.mergedSlotIds;
+          }
+
+          setBaseSlots(prev => 
+            prev.map(s => 
+              idsToCancel.includes(s.id) 
+                ? { ...s, status: 'available' as const }
+                : s
+            )
+          );
+
           Taro.showToast({ title: '已取消预约', icon: 'success' });
           setSelectedSlot(null);
         }
@@ -96,7 +185,7 @@ const ClinicDetailPage: React.FC = () => {
   const totalMinutes = workEnd - workStart;
 
   const renderTimeline = () => {
-    const slots = showMerged ? mockOccupiedData : mockOccupiedData;
+    const slots = displaySlots;
     
     return (
       <View className={styles.timelineContainer}>
@@ -166,6 +255,8 @@ const ClinicDetailPage: React.FC = () => {
       'minute'
     );
 
+    const treatments = selectedSlot.treatments || [];
+
     return (
       <View className={styles.slotDetail}>
         <Text className={styles.slotDetailTitle}>时段详情</Text>
@@ -176,7 +267,7 @@ const ClinicDetailPage: React.FC = () => {
           </Text>
         </View>
         <View className={styles.detailRow}>
-          <Text className={styles.detailLabel}>时长</Text>
+          <Text className={styles.detailLabel}>总时长</Text>
           <Text className={styles.detailValue}>{formatDuration(duration)}</Text>
         </View>
         <View className={styles.detailRow}>
@@ -190,17 +281,27 @@ const ClinicDetailPage: React.FC = () => {
           </Text>
         </View>
         
-        {selectedSlot.isMerged && (
+        {treatments.length > 0 && (
           <View className={styles.treatmentList}>
-            <Text className={styles.detailLabel} style={{ marginBottom: '8rpx' }}>包含诊疗项目：</Text>
-            <View className={styles.treatmentItem}>
-              <Text className={styles.treatmentName}>初诊评估</Text>
-              <Text className={styles.treatmentDuration}>30分钟</Text>
-            </View>
-            <View className={styles.treatmentItem}>
-              <Text className={styles.treatmentName}>药物调整</Text>
-              <Text className={styles.treatmentDuration}>20分钟</Text>
-            </View>
+            <Text className={styles.detailLabel} style={{ marginBottom: '16rpx' }}>
+              包含诊疗项目（{treatments.length}项）：
+            </Text>
+            {treatments.map((item: any) => (
+              <View key={item.id} className={styles.treatmentItem}>
+                <View>
+                  <Text className={styles.treatmentName}>{item.name}</Text>
+                  <Text className={styles.treatmentDuration}>
+                    {item.duration}分钟
+                  </Text>
+                </View>
+                <Button 
+                  className={classnames(styles.actionBtn, styles.cancelMini)}
+                  onClick={() => handleCancelSlot(item.id)}
+                >
+                  取消
+                </Button>
+              </View>
+            ))}
           </View>
         )}
 
@@ -209,13 +310,13 @@ const ClinicDetailPage: React.FC = () => {
             className={classnames(styles.actionBtn, styles.ghost)}
             onClick={handleToggleMerge}
           >
-            {showMerged ? '拆分时段' : '合并时段'}
+            {showMerged ? '拆分视图' : '合并视图'}
           </Button>
           <Button 
             className={classnames(styles.actionBtn, styles.danger)}
-            onClick={handleCancelSlot}
+            onClick={() => handleCancelSlot()}
           >
-            取消预约
+            {selectedSlot.isMerged ? '取消全部' : '取消预约'}
           </Button>
         </View>
       </View>
@@ -301,12 +402,14 @@ const ClinicDetailPage: React.FC = () => {
 
           {activeTab === 'treatment' && (
             <View className={styles.treatmentList}>
-              {['初诊评估', '复诊问诊', '药物调整', '心理咨询'].map((item, index) => (
-                <View key={index} className={styles.treatmentItem} style={{ padding: '24rpx' }}>
-                  <Text className={styles.treatmentName} style={{ fontSize: '28rpx' }}>{item}</Text>
-                  <Text className={styles.treatmentDuration}>
-                    {[30, 15, 20, 50][index]}分钟
-                  </Text>
+              {treatmentItems.map((item: any) => (
+                <View key={item.id} className={styles.treatmentItem} style={{ padding: '24rpx' }}>
+                  <View>
+                    <Text className={styles.treatmentName} style={{ fontSize: '28rpx' }}>{item.name}</Text>
+                    <Text className={styles.treatmentDuration}>
+                      {item.duration}分钟 · ¥{item.price}
+                    </Text>
+                  </View>
                 </View>
               ))}
             </View>
